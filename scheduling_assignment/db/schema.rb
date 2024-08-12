@@ -25,8 +25,8 @@ ActiveRecord::Schema[7.2].define(version: 2024_08_11_175100) do
   end
 
   create_table "work_orders", force: :cascade do |t|
-    t.string "technician_id"
-    t.string "location_id"
+    t.integer "technician_id"
+    t.integer "location_id"
     t.datetime "time"
     t.integer "duration"
     t.integer "price"
