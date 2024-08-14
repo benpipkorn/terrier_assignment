@@ -40,5 +40,5 @@ namespace :setup do
     end
   end
 
-  task import_all: [:import_work_orders_csv, :import_locations_csv, :import_technicians_csv]
+  task import_all: [:import_locations_csv, :import_technicians_csv, :import_work_orders_csv]
 end
