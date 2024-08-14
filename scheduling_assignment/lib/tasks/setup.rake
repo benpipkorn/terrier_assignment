@@ -13,7 +13,9 @@ namespace :setup do
       order_hash[:time] = row["time"]
       order_hash[:duration] = row["duration"]
       order_hash[:price] = row["price"]
-      WorkOrder.create(order_hash)
+      WorkOrder.find_or_create_by(row["id"]) do |wo|
+        wo.update(order_hash)
+      end
     end
   end
   task :import_locations_csv => :environment do
@@ -25,7 +27,9 @@ namespace :setup do
       order_hash[:id] = row["id"]
       order_hash[:name] = row["name"]
       order_hash[:city] = row["city"]
-      Location.create(order_hash)
+      Location.find_or_create_by(row["id"]) do |loc|
+        loc.update(order_hash)
+      end
     end
   end
   task :import_technicians_csv => :environment do
@@ -36,7 +40,9 @@ namespace :setup do
       order_hash = {}
       order_hash[:id] = row["id"]
       order_hash[:name] = row["name"]
-      Technician.create(order_hash)
+      Technician.find_or_initialize_by(row["id"]) do |tech|
+        tech.update(order_hash)
+      end
     end
   end
 
