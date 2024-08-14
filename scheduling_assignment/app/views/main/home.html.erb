@@ -43,7 +43,7 @@
         <% @work_orders.each do |work_order| %>
           <% if work_order.technician_id == technician.id && work_order.time.hour == hour %>
             <div class="block" style=
-            "width: calc((100% - 72px) / <%= @technicians.count %>);
+            "width: calc((100% - 70px) / <%= @technicians.count %>);
             height: <%= (work_order.duration + (work_order.duration / 61)) * 2 %>px;
             left: calc(60px + (<%= technician.id - 1 %> * calc((100% - 60px) / <%= @technicians.count %>)));
             top: calc(32px + <%= (hour-5) * 122 + (work_order.time.min * 2) %>px);">
