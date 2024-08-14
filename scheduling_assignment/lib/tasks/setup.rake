@@ -13,7 +13,7 @@ namespace :setup do
       order_hash[:time] = row["time"]
       order_hash[:duration] = row["duration"]
       order_hash[:price] = row["price"]
-      WorkOrder.find_or_create_by(row["id"]) do |wo|
+      WorkOrder.find_or_create_by(order_hash) do |wo|
         wo.update(order_hash)
       end
     end
@@ -27,7 +27,7 @@ namespace :setup do
       order_hash[:id] = row["id"]
       order_hash[:name] = row["name"]
       order_hash[:city] = row["city"]
-      Location.find_or_create_by(row["id"]) do |loc|
+      Location.find_or_create_by(order_hash) do |loc|
         loc.update(order_hash)
       end
     end
@@ -40,7 +40,7 @@ namespace :setup do
       order_hash = {}
       order_hash[:id] = row["id"]
       order_hash[:name] = row["name"]
-      Technician.find_or_initialize_by(row["id"]) do |tech|
+      Technician.find_or_create_by(order_hash) do |tech|
         tech.update(order_hash)
       end
     end
