@@ -3,106 +3,60 @@
 <head>
   <title>Work Orders Schedule</title>
   <style>
-    table {
-      border-collapse: collapse;
-      width: 100%;
-    }
-    th, td {
-      border: 1px solid black;
-      padding: 8px;
-      text-align: left;
-      vertical-align: top;
+    .grid-container {
+      border: thin solid black;
       position: relative;
+      display: grid;
+      grid-template-columns: 60px repeat(<%= @technicians.count %>, 1fr)
+    }
+    .grid-header {
+      background-color: lightgrey;
+      border: thin solid black;
+      height: 30px;
+      font-size: larger;
+      text-align: center;
+    }
+    .grid-item {
+      border: thin solid black;
+      height: 120px;
     }
     .block {
+      position: absolute;
       background-color: lightblue;
-      padding: 4px;
-      margin: 2px;
-    }
-    .hour-label {
-      width: 60px;
-    }
-    .empty-cell {
-      cursor: pointer;
+      border: thin solid black;
     }
   </style>
 </head>
 <body>
-  <h1>Work Orders Schedule</h1>
+  <h1 style="text-align: center;">Work Orders Schedule</h1>
 
-  <table id="schedule-table">
-    <thead>
-      <tr>
-        <th class="hour-label">Time</th>
-        <% @technicians.each do |technician| %>
-          <th><%= technician.name %></th>
-        <% end %>
-      </tr>
-    </thead>
-    <tbody>
-      <% (0..23).each do |hour| %>
-        <tr>
-          <td class="hour-label"><%= "#{hour}:00" %></td>
-          <% @technicians.each do |technician| %>
-            <td class="<%= 'empty-cell' if @work_orders.none? { |wo| wo.technician_id == technician.id && wo.time.hour == hour } %>">
-              <% @work_orders.each do |work_order| %>
-                <% if work_order.technician_id == technician.id && work_order.time.hour == hour %>
-                  <div class="block">
-                    <strong><%= work_order.location.name %></strong><br>
-                    <%= work_order.location.city %><br>
-                    <%= work_order.time.strftime("%H:%M") %><br>
-                    <%= number_to_currency(work_order.price) %>
-                  </div>
-                <% end %>
-              <% end %>
-            </td>
+  <div class="grid-container">
+    <div class="grid-header">Time</div>
+    <% @technicians.each do |technician| %>
+      <div class="grid-header"><%= technician.name %></div>
+    <% end %>
+
+    <% (4..16).each do |hour| %>
+      <div class="grid-item"><%= "#{hour}:00" %></div>
+      <% @technicians.each do |technician| %>
+        <div class="grid-item"></div>
+        <% @work_orders.each do |work_order| %>
+          <% if work_order.technician_id == technician.id && work_order.time.hour == hour %>
+            <div class="block" style=
+            "width: calc((100% - 86px) / <%= @technicians.count %>);
+            height: <%= (work_order.duration + (work_order.duration / 60)) * 2 %>px;
+            left: calc(62px + (<%= technician.id - 1 %> * calc((100% - 60px) / <%= @technicians.count %>)));
+            top: calc(32px + <%= (hour-4) * 122 + (work_order.time.min) %>px);">
+              <strong><%= work_order.location.name %></strong><br>
+              <%= work_order.location.city %><br>
+              <%= work_order.time.strftime("%H:%M") %><br>
+              <%= work_order.duration %> mintutes<br>
+              <%= number_to_currency(work_order.price) %>
+            </div>
           <% end %>
-        </tr>
+        <% end %>
       <% end %>
-    </tbody>
-  </table>
-
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      // Function to calculate available time
-      function calculateAvailableTime(tableCell, hour, technicianId) {
-        // Get all work orders for the given technician and hour
-        const workOrders = Array.from(document.querySelectorAll('td')).filter(td => {
-          return td.dataset.technicianId == technicianId;
-        });
-
-        if (workOrders.length === 0) {
-          // If there are no work orders, return a message indicating that
-          return 'No work orders available for this time slot.';
-        }
-
-        // Parse work order times
-        const times = workOrders.map(td => new Date(td.dataset.workOrderTime));
-        times.sort((a, b) => a - b); // Sort times in ascending order
-
-        let availableTime = 0;
-        for (let i = 0; i < times.length - 1; i++) {
-          const diff = (times[i + 1] - times[i]) / (1000 * 60 * 60); // Difference in hours
-          if (diff > 0) {
-            availableTime += diff;
-          }
-        }
-
-        return `Available time between work orders: ${availableTime} hours.`;
-      }
-
-      // Add click event listener to empty cells
-      document.querySelectorAll('.empty-cell').forEach(cell => {
-        cell.addEventListener('click', function() {
-          const hour = this.parentElement.querySelector('.hour-label').textContent.split(':')[0];
-          const technicianId = this.dataset.technicianId;
-
-          // Calculate available time and show alert
-          const message = calculateAvailableTime(this, hour, technicianId);
-          alert(message);
-        });
-      });
-    });
-  </script>
+    <% end %>
+  </div>
 </body>
 </html>
