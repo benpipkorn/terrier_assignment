@@ -2,6 +2,7 @@
 <html>
 <head>
   <title>Work Orders Schedule</title>
+  <!-- Using grid so work orders can span over multiple rows -->
   <style>
     .grid-container {
       border: thin solid black;
@@ -12,13 +13,14 @@
     .grid-header {
       background-color: lightgrey;
       border: thin solid black;
-      height: 30px;
+      height: 22px;
       font-size: larger;
       text-align: center;
     }
     .grid-item {
       border: thin solid black;
       height: 120px;
+      cursor: pointer;
     }
     .block {
       position: absolute;
@@ -36,17 +38,20 @@
       <div class="grid-header"><%= technician.name %></div>
     <% end %>
 
+    <!-- Main Loop: Each hour, go through each tech, find any relevant work orders -->
     <% (5..16).each do |hour| %>
       <div class="grid-item"><%= "#{hour}:00" %></div>
       <% @technicians.each do |technician| %>
-        <div class="grid-item"></div>
+        <div class="grid-item" data-hour="<%= hour %>" data-technician-id="<%= technician.id %>"></div>
         <% @work_orders.each do |work_order| %>
           <% if work_order.technician_id == technician.id && work_order.time.hour == hour %>
+            <!-- Adjust block dimensions to match left time column -->
             <div class="block" style=
             "width: calc((100% - 70px) / <%= @technicians.count %>);
             height: <%= (work_order.duration + (work_order.duration / 61)) * 2 %>px;
             left: calc(60px + (<%= technician.id - 1 %> * calc((100% - 60px) / <%= @technicians.count %>)));
-            top: calc(32px + <%= (hour-5) * 122 + (work_order.time.min * 2) %>px);">
+            top: calc(24px + <%= (hour-5) * 122 + (work_order.time.min * 2) %>px);">
+              <!-- Fill in work order information -->
               <strong><%= work_order.location.name %></strong><br>
               <%= work_order.location.city %><br>
               <%= work_order.time.strftime("%H:%M") %><br>
@@ -58,5 +63,69 @@
       <% end %>
     <% end %>
   </div>
+  <script>
+    document.querySelectorAll(".grid-item[data-technician-id]").forEach(item => {
+      item.addEventListener("click", function() {
+        const chosen_minute = parseInt(this.getAttribute("data-hour")) * 60; // Calculating available time in minutes
+        const hour = chosen_minute / 60;
+        const technician_id = parseInt(this.getAttribute("data-technician-id"));
+
+        const work_orders = <%= @work_orders.to_json.html_safe %>; // Convert work orders to JSON
+        
+        const relevant_orders = work_orders
+          .filter(order => order.technician_id === technician_id);
+        // Object.keys(relevant_orders).forEach(key => {
+        //   Object.keys(relevant_orders[key]).forEach(key1 => {
+        //     alert()
+        //   });
+        // });
+
+        let before = 0, after; // Minutes before and after hour clicked
+
+        if (relevant_orders.length > 0) {
+          // Calculate minutes before
+          let i = 0;
+          let curr_time = new Date(relevant_orders[i].time);
+          let curr_hour = curr_time.getHours(), curr_min = curr_time.getMinutes();
+
+          while (i < relevant_orders.length - 1 && chosen_minute < (curr_hour + 4) * 60) { // logic issue
+            i++;
+            curr_time = new Date(relevant_orders[i].time);
+            curr_hour = curr_time.getHours();
+            curr_min = curr_time.getMinutes();
+          }
+          if (i === relevant_orders.length - 1) { // Clicked on hour after last work order
+            after = 17 * 60 - chosen_minute;
+          }
+          else {
+            after = Math.max(0, ((curr_hour + 4) * 60) + curr_min - chosen_minute);
+            alert(`curr_hour: ${curr_hour}\ncurr_minute: ${curr_min}\nchosen_minute: ${chosen_minute}\n`);
+          }
+
+          // Calculate minutes before
+          // i = relevant_orders.length - 1;
+          // let curr_time = new Date(relevant_orders[i].time);
+          // let curr_hour = curr_time.getHours(), curr_min = curr_time.getMinutes();
+
+          // while (i > 0 && chosen_minute < (relevant_orders[i].time.hour * 60 + relevant_orders[i].duration)) {
+          //   i--;
+          //   curr_time = new Date(relevant_orders[i].time);
+          //   curr_hour = curr_time.getHours();
+          //   curr_min = curr_time.getMinutes();
+          // }
+          // if (i === 0) { // Clicked on hour before first work order
+          //   before = chosen_minute - 5 * 60;
+          // }
+          // else {
+          //   before = Math.max(0, (chosen_minute - relevant_orders[i].time.hour * 60) + relevant_orders[i].time.min);
+          // }
+          alert(`There are ${before} minutes available before ${hour}:00\nThere are ${after} minutes available after ${hour}:00`);
+        }
+        else {
+          alert(`Whole day available!`);
+        }
+      });
+    });
+  </script>
 </body>
 </html>
