@@ -15,7 +15,7 @@ SQLite3 v3.37.2
 
 Ensure you have the above dependencies installed. ```rbenv``` comes with csv installed, so if you run this with rbenv, you may receive a warning saying that there are multiple copies of csv functions installed.
 
-The commands to setup and run the application are:
+Clone this repository to your machine and make it the working directory. From there, the commands to setup and run the application are:
 
 ```
 cd ./scheduling_assignment
