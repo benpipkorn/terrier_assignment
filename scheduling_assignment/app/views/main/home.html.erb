@@ -27,6 +27,7 @@
       background-color: lightblue;
       border: thin solid black;
       padding: 2px;
+      width: calc((100% - 84px) / <%= @technicians.count %>);
     }
   </style>
 </head>
@@ -40,7 +41,7 @@
     <% end %>
 
     <!-- Main Loop: Each hour, go through each tech, find any relevant work orders -->
-    <% (5..16).each do |hour| %>
+    <% (0..23).each do |hour| %>
       <div class="grid-item"><%= "#{hour}:00" %></div>
       <% @technicians.each do |technician| %>
         <div class="grid-item" data-hour="<%= hour %>" data-technician-id="<%= technician.id %>"></div>
@@ -48,10 +49,9 @@
           <% if work_order.technician_id == technician.id && work_order.time.hour == hour %>
             <!-- Adjust block dimensions to match left time column -->
             <div class="block" style=
-            "width: calc((100% - 80px) / <%= @technicians.count %>);
-            height: <%= (work_order.duration + (work_order.duration / 61)) * 2 - 4 %>px;
+            "height: <%= (work_order.duration + (work_order.duration / 61)) * 2 - 4 %>px;
             left: calc(60px + (<%= technician.id - 1 %> * calc((100% - 60px) / <%= @technicians.count %>)));
-            top: calc(24px + <%= (hour-5) * 121 + (work_order.time.min * 2) %>px);">
+            top: calc(24px + <%= (hour) * 122 + (work_order.time.min * 2) %>px);">
               <!-- Fill in work order information -->
               <strong><%= work_order.location.name %></strong><br>
               <%= work_order.location.city %><br>
@@ -69,17 +69,17 @@
         const hour = parseInt(this.getAttribute("data-hour"));
         const chosen_minute = hour * 60;  // Easier to calculate with
 
-        // Find relevant work orders
+        // Find relevant work orders for specific tech
         const technician_id = parseInt(this.getAttribute("data-technician-id"));
-        const work_orders = <%= @work_orders.to_json.html_safe %>; // Convert work orders to JSON       
-        const relevant_orders = work_orders.filter(order => order.technician_id === technician_id);
+        const work_orders = <%= @work_orders.to_json.html_safe %>;  // Convert work orders to JSON for extracting data       
+        const relevant_orders = work_orders.filter(order => order.technician_id === technician_id);  
 
         let before = 0, after = 0;  // Minutes before and after hour clicked
         let i = 0;
-        let inProg = ``;
-        let prev_end_minute = 5 * 60;  // Used to calculate before time, starts as beginning of day
+        let prev_end_minute = 0;  // Used to calculate before time, starts as beginning of day
 
         while (i < relevant_orders.length) {
+          // Finding current start and end time
           let curr_time = new Date(relevant_orders[i].time);
           let curr_hour = curr_time.getHours();
           let curr_min = curr_time.getMinutes();
@@ -90,7 +90,7 @@
 
           if (chosen_minute >= curr_start_minute && chosen_minute < curr_start_minute + relevant_orders[i].duration) {
             // The chosen time is during an existing work order
-            if (i + 1 < relevant_orders.length) {
+            if (i + 1 < relevant_orders.length) {  // Find start of next work order (or EOD)
               let next_time = new Date(relevant_orders[i + 1].time);
               let next_hour = next_time.getHours();
               let next_min = next_time.getMinutes();
@@ -98,16 +98,17 @@
 
               after = next_start_minute - curr_end_minute; // Time from end of current work order to start of next
             } else {
-              after = 17 * 60 - curr_end_minute; // Time from end of work order to end of day (5 PM)
+              after = 23 * 60 - curr_end_minute; // Time from end of work order to end of day
             }
-            end_time = `${Math.floor((curr_start_minute + curr_duration) / 60)}:${((curr_start_minute + curr_duration) % 60).toString().padStart(2, '0')}`;
 
+            // Start generating data to be displayed
+            end_time = `${Math.floor((curr_start_minute + curr_duration) / 60)}:${((curr_start_minute + curr_duration) % 60).toString().padStart(2, '0')}`;
             start_time = `${curr_hour+6}:${curr_min.toString().padStart(2, '0')}`;
             before = curr_start_minute - prev_end_minute;
 
             // Ensure work orders overlapping are accounted for
-            let curr_start_minute_temp = curr_start_minute;
             if (i > 0) {
+              let curr_start_minute_temp = curr_start_minute;
               let prev_time = new Date(relevant_orders[i - 1].time);
               let prev_hour = prev_time.getHours();
               let prev_min = prev_time.getMinutes();
@@ -117,13 +118,22 @@
               while (i > 0 && before < 0) {
                 curr_start_minute_temp = prev_start_minute;
                 start_time = `${prev_hour+6}:${prev_min.toString().padStart(2, '0')}`;
+
+                // Work backwards until overlap is not found
                 prev_time = new Date(relevant_orders[i - 1].time);
                 prev_hour = prev_time.getHours();
                 prev_min = prev_time.getMinutes();
                 prev_start_minute = (prev_hour + 6) * 60 + prev_min;
                 prev_end_minute = prev_start_minute + relevant_orders[i - 1].duration;
-                before = curr_start_minute_temp - prev_end_minute;                
+                before = curr_start_minute_temp - prev_end_minute;
+                if (before > 0) {
+                  break;
+                }
                 i--;
+              }
+              if (i === 0) {
+                before = prev_start_minute;
+                start_time = `${prev_hour+6}:${prev_min.toString().padStart(2, '0')}`;
               }
             }
 
@@ -144,7 +154,7 @@
         if (i === relevant_orders.length) {
           // Chosen time is after the last work order
           before = chosen_minute - prev_end_minute;
-          after = 17 * 60 - chosen_minute;  // Assuming the workday ends at 5 PM (17:00)
+          after = 24 * 60 - chosen_minute;  
         }
 
         alert(`There are ${before} minutes available before ${hour}:00\n` +
