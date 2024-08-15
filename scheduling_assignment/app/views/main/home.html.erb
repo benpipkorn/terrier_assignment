@@ -157,8 +157,7 @@
           after = 24 * 60 - chosen_minute;  
         }
 
-        alert(`There are ${before} minutes available before ${hour}:00\n` +
-              `There are ${after} minutes available after ${hour}:00`);
+        alert(`There are ${before + after} minutes available in this time slot.`);
       });
     });
   </script>
